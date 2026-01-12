@@ -1,0 +1,7 @@
+__pycache__/
+token.json
+credentials.json
+logs/
+*.pyc
+*.pkl
+*.log
