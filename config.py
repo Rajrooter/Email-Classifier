@@ -7,7 +7,7 @@ Modify these settings according to your needs
 # GEMINI API CONFIGURATION
 # ============================================
 # Get your API key from: https://makersuite.google.com/app/apikey
-GEMINI_API_KEY = "AIzaSyCYrgOYW8hMjYWVp_I3DlN2zcFQr-Op0hQ"  # ⚠️ REPLACE THIS
+GEMINI_API_KEY = "GEMINI_API_KEY"  # ⚠️ REPLACE THIS
 
 # Gemini model to use
 GEMINI_MODEL = "gemini-2.5-pro"  # Fast and cost-effective
@@ -83,11 +83,12 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5
 
 # Gmail API scopes required
-SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+SCOPES = ['API SCOPE REQUIRED ']
 
 # ============================================
 # MAIN ENTRY POINT FOR TESTING
 # ============================================
 if __name__ == "__main__":
     print("Testing Gemini API key and model...")
+
     test_gemini_api_key_and_model()
