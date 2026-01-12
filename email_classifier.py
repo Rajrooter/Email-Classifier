@@ -78,10 +78,17 @@ class GmailAuthenticator:
         if os.environ.get("GOOGLE_CREDENTIALS"):
             with open(self.credentials_file, "w") as f:
                 f.write(os.environ["GOOGLE_CREDENTIALS"])
+        
+        # Load token from env var if present (for Railway/headless deployments)
+        if os.environ.get("GOOGLE_TOKEN"):
+            token_data = base64.b64decode(os.environ["GOOGLE_TOKEN"])
+            self.creds = pickle.loads(token_data)
+            logger.info("OK Loaded credentials from GOOGLE_TOKEN env var")
+        
         logger.info("Starting Gmail authentication...")
 
-        # Check if token.json exists with valid credentials
-        if os.path.exists(self.token_file):
+        # Check if token.json exists with valid credentials (fallback for local dev)
+        if not self.creds and os.path.exists(self.token_file):
             with open(self.token_file, 'rb') as token:
                 self.creds = pickle.load(token)
 
@@ -114,10 +121,11 @@ class GmailAuthenticator:
                     # Fallback for environments where run_console is not available
                     self.creds = flow.run_local_server(port=0)
 
-            # Save credentials for next run
-            with open(self.token_file, 'wb') as token:
-                pickle.dump(self.creds, token)
-            logger.info("OK credentials saved successfully")
+            # Save credentials for next run (only in local dev, not Railway)
+            if not self._is_headless_environment():
+                with open(self.token_file, 'wb') as token:
+                    pickle.dump(self.creds, token)
+                logger.info("OK credentials saved successfully")
 
         # Build and return Gmail service
         service = build('gmail', 'v1', credentials=self.creds)
