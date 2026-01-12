@@ -74,6 +74,10 @@ class GmailAuthenticator:
 
     def authenticate(self):
         """Authenticate and return Gmail service"""
+        # Railway: Write GOOGLE_CREDENTIALS env var to credentials.json if present
+        if os.environ.get("GOOGLE_CREDENTIALS"):
+            with open(self.credentials_file, "w") as f:
+                f.write(os.environ["GOOGLE_CREDENTIALS"])
         logger.info("Starting Gmail authentication...")
 
         # Check if token.json exists with valid credentials
