@@ -97,6 +97,13 @@ class GmailAuthenticator:
                     logger.error("Please download OAuth credentials from Google Cloud Console")
                     raise FileNotFoundError(f"{self.credentials_file} not found")
 
+                # Detect headless environment (e.g., Railway, Docker)
+                if self._is_headless_environment():
+                    logger.error("ERROR: Headless environment detected. Cannot perform OAuth flow interactively.")
+                    logger.error("Please authenticate locally on a machine with a browser, save token.json, and deploy it with your app.")
+                    logger.error("Alternatively, set up domain-wide delegation or a service account for production use.")
+                    raise RuntimeError("OAuth authentication requires a browser, which is not available in headless environments.")
+
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.credentials_file, config.SCOPES
                 )
@@ -116,6 +123,17 @@ class GmailAuthenticator:
         service = build('gmail', 'v1', credentials=self.creds)
         logger.info("OK Gmail authentication successful")
         return service
+
+    def _is_headless_environment(self):
+        """Check if running in a headless environment (no display/browser)"""
+        # Check for DISPLAY env var (Linux/Mac) or common headless indicators
+        return (
+            not os.environ.get('DISPLAY') or
+            os.environ.get('CI') or
+            os.environ.get('RAILWAY_ENVIRONMENT') or  # Railway-specific
+            not hasattr(__import__('webbrowser'), 'open') or  # Fallback check
+            True  # Assume headless for safety in cloud deployments
+        )
 
 
 # ============================================
@@ -142,7 +160,7 @@ class EmailClassifier:
         ])
 
         prompt = f"""
-You are an expert email classifier. Use the Socratic method: ask yourself probing questions about the email's intent, context, and content before deciding on a label. Do NOT rely only on keywords in the subject or body. Carefully analyze the full content, sender, and intent of the email. If the email is a job advertisement or promotion, but not a direct job offer or recruiter message, label it as 'Promotions' not 'Jobs'. If unsure, explain your reasoning and choose the most appropriate label.
+You are an expert email classifier. Use the Socratic method: ask yourself probing questions about the email's intent, context, and content before deciding on a label. Do NOT rely only on keywords in the title or subject.
 
 ALLOWED LABELS:
 {labels_description}
@@ -167,7 +185,10 @@ CLASSIFICATION RULES:
    - Use clear, concise, descriptive names (1-2 words, CamelCase or Title Case preferred)
 
 TASK:
-First, use the Socratic method: ask yourself at least two questions about the email's true purpose and answer them. Then, explain your reasoning in 1-2 sentences. Ask yourself: "Does any existing label fit this email?" If yes, use that label. Only if no existing label fits, propose a new label name with a short justification. Finally, on a new line, output ONLY the label name (no punctuation, no explanation, just the label name)."""
+First, use the Socratic method: ask yourself at least two questions about the email's true purpose and answer them. Then, explain your reasoning in 1-2 sentences. Ask yourself: "Does any existing label apply, or do I need to create a new one?"
+
+Finally, output ONLY the label name on the last line.
+        """
         return prompt
     
     def classify_email(self, email_data: Dict) -> Optional[str]:
@@ -236,7 +257,7 @@ class EmailManager:
         self._initialize_labels()
     
     def _initialize_labels(self):
-        """ate labels if they don't exist and cache label IDs"""
+        """Create labels if they don't exist and cache label IDs"""
         logger.info("Initializing Gmail labels...")
         
         try:
@@ -244,7 +265,7 @@ class EmailManager:
             results = self.service.users().labels().list(userId='me').execute()
             existing_labels = {label['name']: label['id'] for label in results.get('labels', [])}
             
-            # ate missing labels
+            # Create missing labels
             for label_name in config.EMAIL_LABELS.keys():
                 logger.info(f"Attempting to create/check label: '{label_name}'")
                 if label_name in existing_labels:
