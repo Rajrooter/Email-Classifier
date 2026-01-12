@@ -11,7 +11,6 @@ GEMINI_API_KEY = "GEMINI_API_KEY"  # ⚠️ REPLACE THIS
 
 # Gemini model to use
 GEMINI_MODEL = "gemini-2.5-pro"  # Fast and cost-effective
-# Alternative: "gemini-1.5-pro" for higher accuracy
 
 # ============================================
 # EMAIL CLASSIFICATION SETTINGS
@@ -92,3 +91,4 @@ if __name__ == "__main__":
     print("Testing Gemini API key and model...")
 
     test_gemini_api_key_and_model()
+
