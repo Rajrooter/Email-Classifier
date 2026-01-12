@@ -100,8 +100,12 @@ class GmailAuthenticator:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.credentials_file, config.SCOPES
                 )
-                # Use console flow for headless/cloud environments
-                self.creds = flow.run_console()
+                # Use console flow for headless/cloud environments if available, else fallback
+                if hasattr(flow, 'run_console'):
+                    self.creds = flow.run_console()
+                else:
+                    # Fallback for environments where run_console is not available
+                    self.creds = flow.run_local_server(port=0)
 
             # Save credentials for next run
             with open(self.token_file, 'wb') as token:
