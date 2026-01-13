@@ -29,7 +29,7 @@ try:
     from googleapiclient.errors import HttpError
 
     # Use the correct Gemini API package (new)
-    import google.genai as genai
+    import google.generativeai as genai
     import google.generativeai as genai
 except ImportError as e:
     print(f"❌ Missing required package: {e}")
@@ -709,4 +709,3 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-
