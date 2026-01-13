@@ -60,8 +60,12 @@ def setup_logging():
 if not os.path.exists("token.json"):
     token_b64 = os.environ.get("TOKEN_JSON_B64")
     if token_b64:
-        with open("token.json", "wb") as f:
-            f.write(base64.b64decode(token_b64))
+        try:
+            token_json = base64.b64decode(token_b64).decode('utf-8')
+            with open("token.json", "w") as f:
+                f.write(token_json)
+        except Exception as e:
+            print(f"WARNING: Failed to decode TOKEN_JSON_B64: {e}; token.json not created.")
     else:
         # Not fatal for local dev, but log for cloud
         print("WARNING: TOKEN_JSON_B64 environment variable not set; token.json not created.")
@@ -90,18 +94,25 @@ class GmailAuthenticator:
         
         # Load token from env var if present (for Railway/headless deployments)
         if os.environ.get("GOOGLE_TOKEN"):
-            token_data = base64.b64decode(os.environ["GOOGLE_TOKEN"])
-            self.creds = pickle.loads(token_data)
-            logger.info("OK Loaded credentials from GOOGLE_TOKEN env var")
+            try:
+                token_data = base64.b64decode(os.environ["GOOGLE_TOKEN"])
+                self.creds = pickle.loads(token_data)
+                logger.info("OK Loaded credentials from GOOGLE_TOKEN env var")
+            except Exception as e:
+                logger.error(f"ERROR: Failed to load credentials from GOOGLE_TOKEN: {e}")
         
         logger.info("Starting Gmail authentication...")
 
         # Check if token.json exists with valid credentials (fallback for local dev)
         if not self.creds and os.path.exists(self.token_file):
             import json
-            with open(self.token_file, 'r') as token:
-                token_data = json.load(token)
-            self.creds = Credentials.from_authorized_user_info(token_data, config.SCOPES)
+            try:
+                with open(self.token_file, 'r') as token:
+                    token_data = json.load(token)
+                self.creds = Credentials.from_authorized_user_info(token_data, config.SCOPES)
+            except json.JSONDecodeError as e:
+                logger.error(f"ERROR: Invalid JSON in {self.token_file}: {e}. Removing file.")
+                os.remove(self.token_file)
 
         # If credentials are invalid or don't exist, get new ones
         if not self.creds or not self.creds.valid:
@@ -179,7 +190,7 @@ class EmailClassifier:
         ])
 
         prompt = f"""
-You are an expert email classifier. Use the Socratic method: ask yourself probing questions about the email's intent, context, and content before deciding on a label. Do NOT rely only on keywords in the title or subject.
+You are an expert email classifier. Use the Socratic method: ask yourself probing questions about the email's intent, context, and content before deciding on a label. Do NOT rely only on keywords in t[...]
 
 ALLOWED LABELS:
 {labels_description}
@@ -196,7 +207,7 @@ CLASSIFICATION RULES:
 4. Apply 'Jobs' for any career-related content (but NOT for job ads or resume services—those are 'Promotions')
 5. When multiple labels could apply, select the most specific one
 6. Use 'Others' only as a last resort
-7. ONLY create a new label if NONE of the allowed labels fit the email's purpose after deep reasoning. Do NOT create unnecessary labels. If you must create a new label, follow Gmail label naming rules:
+7. ONLY create a new label if NONE of the allowed labels fit the email's purpose after deep reasoning. Do NOT create unnecessary labels. If you must create a new label, follow Gmail label naming rules[...]
    - Max 225 characters
    - No special characters: / \\ * ? < > | {{ }}
    - Cannot be empty or start/end with spaces
@@ -204,7 +215,7 @@ CLASSIFICATION RULES:
    - Use clear, concise, descriptive names (1-2 words, CamelCase or Title Case preferred)
 
 TASK:
-First, use the Socratic method: ask yourself at least two questions about the email's true purpose and answer them. Then, explain your reasoning in 1-2 sentences. Ask yourself: "Does any existing label apply, or do I need to create a new one?"
+First, use the Socratic method: ask yourself at least two questions about the email's true purpose and answer them. Then, explain your reasoning in 1-2 sentences. Ask yourself: "Does any existing labe[...]
 
 Finally, output ONLY the label name on the last line.
         """
@@ -348,7 +359,7 @@ class EmailManager:
     def _get_email_details(self, message_id: str) -> Optional[Dict]:
         """Get detailed information for a specific email"""
         try:
-            message = self.service.users().messages().get(
+            message = self.service.users().messages.get(
                 userId='me',
                 id=message_id,
                 format='full'
