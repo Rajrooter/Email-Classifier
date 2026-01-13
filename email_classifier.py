@@ -30,6 +30,7 @@ try:
 
     # Use the correct Gemini API package (new)
     import google.genai as genai
+        import google.generativeai as genai
 except ImportError as e:
     print(f"❌ Missing required package: {e}")
     print("Run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client google-generativeai")
