@@ -98,8 +98,10 @@ class GmailAuthenticator:
 
         # Check if token.json exists with valid credentials (fallback for local dev)
         if not self.creds and os.path.exists(self.token_file):
-            with open(self.token_file, 'rb') as token:
-                self.creds = pickle.load(token)
+            import json
+            with open(self.token_file, 'r') as token:
+                token_data = json.load(token)
+            self.creds = Credentials.from_authorized_user_info(token_data, config.SCOPES)
 
         # If credentials are invalid or don't exist, get new ones
         if not self.creds or not self.creds.valid:
