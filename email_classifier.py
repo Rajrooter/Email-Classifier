@@ -54,6 +54,18 @@ def setup_logging():
     logging.basicConfig(
         level=getattr(logging, config.LOG_LEVEL),
         handlers=handlers
+    import os
+    import base64
+
+    # Create token.json from environment variable if it doesn't exist (for Railway deployment)
+    if not os.path.exists("token.json"):
+        token_b64 = os.environ.get("TOKEN_JSON_B64")
+        if token_b64:
+            with open("token.json", "wb") as f:
+                f.write(base64.b64decode(token_b64))
+        else:
+            # Not fatal for local dev, but log for cloud
+            print("WARNING: TOKEN_JSON_B64 environment variable not set; token.json not created.")
     )
     return logging.getLogger(__name__)
 
