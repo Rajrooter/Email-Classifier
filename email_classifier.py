@@ -315,7 +315,16 @@ Begin:
                             continue
                         return "Others"
 
-                    classification = lines[-1].strip('."\'`*-:')
+
+                    # Try to extract label if it is prefixed (e.g., 'Label: Jobs')
+                    import re
+                    label_line = lines[-1]
+                    # Remove common prefixes and punctuation
+                    match = re.search(r'(?:label\s*[:\-])?\s*([A-Za-z]+)', label_line, re.IGNORECASE)
+                    if match:
+                        classification = match.group(1).strip()
+                    else:
+                        classification = label_line.strip('."\'`*-:')
 
                     # Validate against allowed labels
                     if classification in config.EMAIL_LABELS:
