@@ -54,36 +54,8 @@ def setup_logging():
     logging.basicConfig(
         level=getattr(logging, config.LOG_LEVEL),
         handlers=handlers
-"""
-Gmail Email Classifier Bot using Gemini AI
-Automatically classifies and labels emails based on content
-"""
-
-# Standard library imports
-import os
-import base64
-import time
-import logging
-from datetime import datetime
-from typing import List, Dict, Optional
-import pickle
-from pathlib import Path
-
-# Third-party Google API imports
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-
-# Gemini AI import
-import google.generativeai as genai
-
-# Local imports
-import config
-# (Optional) Attachment extraction utilities
-# from attachment_text_extractor import extract_text_from_attachment
-
+    )
+    return logging.getLogger(__name__)
 # Create token.json from environment variable if it doesn't exist (for Railway deployment)
 if not os.path.exists("token.json"):
     token_b64 = os.environ.get("TOKEN_JSON_B64")
@@ -93,8 +65,6 @@ if not os.path.exists("token.json"):
     else:
         # Not fatal for local dev, but log for cloud
         print("WARNING: TOKEN_JSON_B64 environment variable not set; token.json not created.")
-    )
-    return logging.getLogger(__name__)
 
 
 logger = setup_logging()
