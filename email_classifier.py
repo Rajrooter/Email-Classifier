@@ -226,9 +226,9 @@ class EmailClassifier:
             )
 
         try:
-            self.client = genai.Client(api_key=config.GEMINI_API_KEY)
-            self.model_name = config.GEMINI_MODEL
-            logger.info(f"✓ Gemini AI client initialized: {config.GEMINI_MODEL}")
+            genai.configure(api_key=config.GEMINI_API_KEY)
+            self.model = genai.GenerativeModel(config.GEMINI_MODEL)
+            logger.info(f"✓ Gemini AI model initialized: {config.GEMINI_MODEL}")
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Gemini AI: {e}")
 
@@ -285,17 +285,16 @@ Begin:
             # Call Gemini API with retry logic
             for attempt in range(config.MAX_RETRIES):
                 try:
-                    response = self.client.models.generate_content(
-                        model=self.model_name,
-                        contents=prompt,
-                        config={
+                    response = self.model.generate_content(
+                        prompt,
+                        generation_config={
                             "temperature": 0.1,
                             "max_output_tokens": 200,
                             "top_p": 0.8,
                             "top_k": 40,
                         }
                     )
-                    
+
                     # Extract and validate response
                     if not hasattr(response, 'text') or not response.text:
                         logger.warning(f"Empty response from Gemini (attempt {attempt + 1})")
@@ -303,10 +302,10 @@ Begin:
                             time.sleep(config.RETRY_DELAY)
                             continue
                         return "Others"
-                    
+
                     # Get the response text
                     full_response = response.text.strip()
-                    
+
                     # Extract last line as the classification
                     lines = [line.strip() for line in full_response.split('\n') if line.strip()]
                     if not lines:
@@ -315,34 +314,33 @@ Begin:
                             time.sleep(config.RETRY_DELAY)
                             continue
                         return "Others"
-                    
+
                     classification = lines[-1].strip('."\'`*-:')
-                    
+
                     # Validate against allowed labels
                     if classification in config.EMAIL_LABELS:
                         logger.info(f"✓ Classified as: {classification}")
                         return classification
-                    
+
                     # Try case-insensitive match
                     for label in config.EMAIL_LABELS:
                         if classification.lower() == label.lower():
                             logger.info(f"✓ Classified as: {label} (case-corrected)")
                             return label
-                    
+
                     # Invalid classification
                     logger.warning(
                         f"Invalid classification '{classification}' (attempt {attempt + 1}). "
                         f"Response: {full_response[:100]}"
                     )
-                    
+
                     if attempt < config.MAX_RETRIES - 1:
                         time.sleep(config.RETRY_DELAY)
                         continue
-                    
+
                     # All retries exhausted
                     logger.error(f"All {config.MAX_RETRIES} attempts failed. Defaulting to 'Others'")
                     return "Others"
-                
                 except Exception as e:
                     logger.warning(f"Gemini API error (attempt {attempt + 1}): {e}")
                     if attempt < config.MAX_RETRIES - 1:
