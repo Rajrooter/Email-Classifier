@@ -31,9 +31,9 @@ EMAIL_LABELS = {
 }
 
 # ── Processing limits & behaviour ───────────────────────────────
-MAX_EMAILS_PER_RUN         = 40
+MAX_EMAILS_PER_RUN         = 100
 EMAIL_BODY_PREVIEW_LENGTH  = 800
-CHECK_INTERVAL_SECONDS     = 900          # 15 minutes
+CHECK_INTERVAL_SECONDS     = 300        # 5 minutes
 CONTINUOUS_MODE            = True
 
 MARK_AS_READ               = False
@@ -51,3 +51,4 @@ LOG_TO_CONSOLE = True
 
 # ── Gmail API ───────────────────────────────────────────────────
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+
